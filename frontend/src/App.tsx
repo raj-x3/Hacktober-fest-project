@@ -3,6 +3,8 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import AppShell from './pages/AppShell'
 import AnalysisPage from './pages/AnalysisPage'
 import ResultsPage from './pages/ResultsPage'
+import ResearchLibraryPage from './pages/ResearchLibraryPage'
+import SettingsPage from './pages/SettingsPage'
 
 // Lazy-load the intro so Three.js only loads when the intro is actually shown
 const IntroPage = lazy(() => import('./pages/IntroPage'))
@@ -25,6 +27,8 @@ export default function App() {
       } />
       <Route path="/app" element={<AppShell />}>
         <Route index element={<AnalysisPage />} />
+        <Route path="library" element={<ResearchLibraryPage />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="results/:id" element={<ResultsPage />} />
       </Route>
       {/* Catch-all */}

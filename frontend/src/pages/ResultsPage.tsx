@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { getReport } from '../lib/api'
+import { getGitHubFileUrl } from '../lib/github'
 import type { AnalysisReport, EvidenceResult, EvidenceStatus } from '../lib/types'
 
 const STATUS_META: Record<EvidenceStatus, { label: string; bg: string; text: string; dot: string }> = {
@@ -68,7 +69,20 @@ export default function ResultsPage() {
           <h2 className="text-sm font-semibold text-gray-900 mb-1 truncate" title={report.paper_title}>
             {report.paper_title}
           </h2>
-          <p className="text-xs text-gray-400 truncate mb-3">{report.repo_url}</p>
+          <p className="text-xs text-gray-400 truncate mb-2">{report.repo_url}</p>
+
+          {/* Repository statistics */}
+          {(typeof report.repo_files_indexed === 'number' || typeof report.repo_python_files === 'number') && (
+            <div className="flex items-center gap-2 mb-3 text-[11px] text-gray-500 bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-100">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" />
+              <span className="truncate">
+                Inspected <strong className="font-semibold text-gray-700">{report.repo_files_indexed ?? 0}</strong> files
+                {typeof report.repo_python_files === 'number' && (
+                  <> (<strong className="font-semibold text-gray-700">{report.repo_python_files}</strong> Python)</>
+                )}
+              </span>
+            </div>
+          )}
 
           {/* Summary badges */}
           <div className="flex gap-2 flex-wrap">
@@ -151,13 +165,59 @@ export default function ResultsPage() {
             {/* Source file */}
             {activeResult.file_path && (
               <div className="rounded-xl border border-gray-200 bg-white p-5 mb-4">
-                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Source File</p>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Source File</p>
+                  {(() => {
+                    const ghUrl = getGitHubFileUrl(
+                      report.repo_url,
+                      activeResult.file_path,
+                      report.default_branch,
+                      activeResult.line_start,
+                      activeResult.line_end,
+                    )
+                    return ghUrl ? (
+                      <a
+                        href={ghUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 hover:underline transition-colors"
+                      >
+                        View on GitHub
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    ) : null
+                  })()}
+                </div>
+
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                    {activeResult.file_path}
-                  </span>
+                  {(() => {
+                    const ghUrl = getGitHubFileUrl(
+                      report.repo_url,
+                      activeResult.file_path,
+                      report.default_branch,
+                      activeResult.line_start,
+                      activeResult.line_end,
+                    )
+                    return ghUrl ? (
+                      <a
+                        href={ghUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-xs bg-gray-100 hover:bg-brand-50 text-brand-700 hover:text-brand-800 px-2 py-1 rounded transition-colors"
+                        title="Open in GitHub"
+                      >
+                        {activeResult.file_path}
+                      </a>
+                    ) : (
+                      <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                        {activeResult.file_path}
+                      </span>
+                    )
+                  })()}
                   {activeResult.line_start && (
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-gray-400 font-mono">
                       L{activeResult.line_start}{activeResult.line_end ? `–${activeResult.line_end}` : ''}
                     </span>
                   )}

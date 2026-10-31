@@ -46,6 +46,7 @@ export interface JobStatus {
   total_stages: number
   done: boolean
   error?: string
+  log?: string[]
 }
 export const pollJob = (jobId: string) => get<JobStatus>(`/analyse/${jobId}/status`)
 

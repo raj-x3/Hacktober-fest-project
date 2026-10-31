@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import fitz  # PyMuPDF
 
@@ -17,16 +17,116 @@ logger = logging.getLogger(__name__)
 MAX_PAGES = 40          # cap to avoid sending huge docs to Gemma
 CHUNK_CHARS = 6000      # characters per chunk sent to Gemma for claim extraction
 
+# Lines shorter than this won't be used as a title fallback
+_MIN_TITLE_CHARS = 8
+# Lines longer than this are probably an abstract or paragraph, not a title
+_MAX_TITLE_CHARS = 200
+
+
+def extract_title(pdf_path: Path) -> str:
+    """
+    Return the paper title using the following priority:
+
+    1. PDF document metadata ``/Title`` field (populated by most LaTeX / Word tools).
+    2. First non-trivial line on page 1 that looks like a heading: not too short,
+       not too long, and doesn't start with typical boilerplate words
+       ("Abstract", "arXiv", "Published", "Copyright", "Submitted", …).
+    3. Stem of the file name (the last resort fallback).
+
+    Never returns a temporary directory name such as ``pt_pdf_xxxxxx``.
+    """
+    doc: Optional[fitz.Document] = None
+    try:
+        doc = fitz.open(str(pdf_path))
+
+        # ── Strategy 1: PDF metadata title ────────────────────────────────
+        meta = doc.metadata or {}
+        meta_title: str = (meta.get("title") or "").strip()
+        if (
+            meta_title
+            and _MIN_TITLE_CHARS <= len(meta_title) <= _MAX_TITLE_CHARS
+            and not _looks_like_boilerplate(meta_title)
+        ):
+            logger.info("PDF title from metadata: %r", meta_title)
+            return meta_title
+
+        # ── Strategy 2: First-page heading heuristic ──────────────────────
+        if len(doc) > 0:
+            page_text = doc[0].get_text()
+            lines = [l.strip() for l in page_text.splitlines() if l.strip()]
+            for idx, line in enumerate(lines):
+                if (
+                    _MIN_TITLE_CHARS <= len(line) <= _MAX_TITLE_CHARS
+                    and not _looks_like_boilerplate(line)
+                ):
+                    # If the heading wraps onto a continuation line, join them
+                    if (
+                        line.rstrip().lower().endswith(("for", "of", "and", "in", "with", "to", "on", ":", "-"))
+                        and idx + 1 < len(lines)
+                    ):
+                        next_line = lines[idx + 1]
+                        if not _looks_like_boilerplate(next_line) and len(next_line) < 100:
+                            combined = f"{line} {next_line}".strip()
+                            logger.info("PDF title from combined heading: %r", combined)
+                            return combined
+
+                    logger.info("PDF title from first-page heading: %r", line)
+                    return line
+
+        # ── Strategy 3: file stem (never a tmpdir) ────────────────────────
+        stem = pdf_path.stem
+        if not stem.startswith("pt_pdf_"):
+            logger.info("PDF title from file stem: %r", stem)
+            return stem.replace("_", " ").replace("-", " ").title()
+
+        return "Untitled Research Paper"
+
+    except Exception as exc:
+        logger.warning("extract_title failed: %s", exc)
+        return "Untitled Research Paper"
+    finally:
+        if doc:
+            doc.close()
+
+
+_BOILERPLATE_PREFIXES = (
+    "abstract", "arxiv", "published", "copyright", "submitted",
+    "preprint", "proceedings", "workshop", "conference", "journal",
+    "doi:", "http", "figure", "table", "appendix",
+)
+
+
+def _looks_like_boilerplate(text: str) -> bool:
+    """Return True if the text is unlikely to be a paper title."""
+    lower = text.lower()
+    # Starts with a known boilerplate word
+    if any(lower.startswith(p) for p in _BOILERPLATE_PREFIXES):
+        return True
+    # Looks like a pure number / code / arXiv ID
+    if re.match(r'^[\d\s\.\-:]+$', text):
+        return True
+    # Contains an email address (likely an author line)
+    if "@" in text:
+        return True
+    return False
+
 
 def extract_text(pdf_path: Path) -> str:
     """Extract plain text from all pages of a PDF."""
-    doc = fitz.open(str(pdf_path))
-    pages = min(len(doc), MAX_PAGES)
-    text_parts: list[str] = []
-    for i in range(pages):
-        text_parts.append(doc[i].get_text())
-    doc.close()
-    return "\n".join(text_parts)
+    try:
+        doc = fitz.open(str(pdf_path))
+    except Exception as exc:
+        logger.error("Failed to open PDF %s: %s", pdf_path, exc)
+        raise ValueError(f"Could not open or parse PDF file: {exc}") from exc
+
+    try:
+        pages = min(len(doc), MAX_PAGES)
+        text_parts: list[str] = []
+        for i in range(pages):
+            text_parts.append(doc[i].get_text())
+        return "\n".join(text_parts)
+    finally:
+        doc.close()
 
 
 def chunk_text(text: str, chunk_size: int = CHUNK_CHARS) -> list[str]:

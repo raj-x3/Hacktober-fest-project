@@ -5,17 +5,18 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import shutil
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from services.gemma_service import get_gemma_service, DEFAULT_MODEL
-from services.pdf_service import extract_claims_from_pdf
+from services.pdf_service import extract_claims_from_pdf, extract_title
 from services.github_service import clone_repo, RepoIndex
 
 # ── App setup ──────────────────────────────────────────────────────────────
@@ -98,10 +99,26 @@ async def start_analysis(
     repo_url: str = Form(...),
 ):
     """Accept PDF + GitHub URL. Start async analysis job. Return job_id immediately."""
-    if pdf.content_type != "application/pdf":
+    clean_url = repo_url.strip()
+    # Normalize github URL and check format
+    clean_base = clean_url.rstrip("/").removesuffix(".git")
+    if not re.match(r"^https://github\.com/[\w\-]+/[\w\-.]+$", clean_base):
+        raise HTTPException(
+            400,
+            "Please provide a valid public GitHub repository URL (e.g. https://github.com/owner/repo)."
+        )
+
+    # Check content type and extension
+    is_pdf = (
+        pdf.content_type in ("application/pdf", "application/x-pdf")
+        or (pdf.filename and pdf.filename.lower().endswith(".pdf"))
+    )
+    if not is_pdf:
         raise HTTPException(400, "Only PDF files are accepted.")
-    if not repo_url.startswith("https://github.com/"):
-        raise HTTPException(400, "Only public GitHub URLs are accepted.")
+
+    content = await pdf.read()
+    if not content or len(content) < 10:
+        raise HTTPException(400, "The uploaded PDF file is empty or invalid.")
 
     job_id = str(uuid.uuid4())
     _jobs[job_id] = _new_job(job_id)
@@ -109,10 +126,9 @@ async def start_analysis(
     tmp_dir = Path(tempfile.mkdtemp(prefix="pt_pdf_"))
     pdf_path = tmp_dir / "paper.pdf"
     with open(pdf_path, "wb") as f:
-        content = await pdf.read()
         f.write(content)
 
-    asyncio.create_task(_run_analysis(job_id, pdf_path, tmp_dir, repo_url))
+    asyncio.create_task(_run_analysis(job_id, pdf_path, tmp_dir, clean_url))
     return {"job_id": job_id}
 
 
@@ -160,6 +176,8 @@ async def _run_analysis(
 
         # ── Stage 0: Extract claims ────────────────────────────────────────
         _advance(job, 0)
+        paper_title = extract_title(pdf_path)
+        _log(job, f"Paper title: {paper_title}")
         claims = await extract_claims_from_pdf(pdf_path, gemma)
         if not claims:
             raise RuntimeError("No research claims could be extracted from the PDF.")
@@ -192,12 +210,10 @@ async def _run_analysis(
 
             if not snippets:
                 _log(job, f"    → No code snippets found in {len(all_paths)} indexed files")
-                evidence = {
+                evidence: dict[str, Any] = {
                     "claim_id": claim["id"],
                     "status": "missing",
                     "file_path": None,
-                    "line_start": None,
-                    "line_end": None,
                     "code_snippet": None,
                     "explanation": (
                         f"No relevant code was found in the {len(all_paths)} indexed files "
@@ -228,8 +244,6 @@ async def _run_analysis(
                         "claim_id": claim["id"],
                         "status": "ambiguous",
                         "file_path": None,
-                        "line_start": None,
-                        "line_end": None,
                         "code_snippet": None,
                         "explanation": (
                             f"Snippets were found ({len(snippets)} from {snippet_summary}) "
@@ -238,29 +252,57 @@ async def _run_analysis(
                         "limitations": "Retry may succeed if the model was temporarily unavailable.",
                     }
 
-            # Validate: reject invented file paths
-            fp = evidence.get("file_path")
+            # ── Step 1: Validate file path (reject hallucinated paths) ─────
+            fp: Optional[str] = evidence.get("file_path") or None
             if fp and not repo_index.path_exists(fp):
                 logger.warning("Hallucinated file path rejected: %s", fp)
                 _log(job, f"    ⚠ Hallucinated path rejected: {fp}")
                 evidence["file_path"] = None
-                evidence["line_start"] = None
-                evidence["line_end"] = None
                 evidence["code_snippet"] = None
                 if evidence.get("status") == "supported":
                     evidence["status"] = "ambiguous"
                 evidence["limitations"] = (
-                    (evidence.get("limitations") or "") +
-                    " (File path returned by model could not be verified in the repository.)"
+                    (evidence.get("limitations") or "")
+                    + " (File path returned by model could not be verified in the repository.)"
                 )
+                fp = None
+
+            # ── Step 2: Derive line numbers from actual file content ───────
+            # Gemma is NOT trusted to emit line numbers — it counts relative to
+            # the snippet window it was shown, not the whole file.
+            # We locate the verbatim code_snippet in the actual indexed file
+            # to get authoritative 1-indexed line numbers.
+            code_snippet: Optional[str] = evidence.get("code_snippet") or None
+            line_start: Optional[int] = None
+            line_end: Optional[int] = None
+
+            if fp and code_snippet:
+                located = repo_index.locate_snippet(fp, code_snippet)
+                if located:
+                    line_start, line_end = located
+                    _log(job, f"    ✓ Validated citation: {fp} L{line_start}–{line_end}")
+                else:
+                    _log(job, f"    ⚠ code_snippet not found verbatim in {fp} — line numbers unavailable")
+                    logger.warning(
+                        "code_snippet for claim %s not found verbatim in %s — possibly paraphrased",
+                        claim["id"], fp,
+                    )
+                    # Keep the snippet visible but downgrade confidence
+                    if evidence.get("status") == "supported":
+                        evidence["status"] = "ambiguous"
+                    evidence["limitations"] = (
+                        (evidence.get("limitations") or "")
+                        + " (Exact code excerpt could not be located in the file;"
+                        " line numbers are unavailable.)"
+                    )
 
             results.append({
                 "claim": claim,
                 "status": evidence.get("status", "missing"),
-                "file_path": evidence.get("file_path"),
-                "line_start": evidence.get("line_start"),
-                "line_end": evidence.get("line_end"),
-                "code_snippet": evidence.get("code_snippet"),
+                "file_path": fp,
+                "line_start": line_start,
+                "line_end": line_end,
+                "code_snippet": code_snippet,
                 "explanation": evidence.get("explanation", ""),
                 "limitations": evidence.get("limitations", ""),
             })
@@ -279,10 +321,11 @@ async def _run_analysis(
         import datetime
         job["report"] = {
             "id": job_id,
-            "paper_title": pdf_path.parent.name or "Unknown paper",
+            "paper_title": paper_title,
             "repo_url": repo_url,
             "created_at": datetime.datetime.utcnow().isoformat() + "Z",
             "model_used": gemma.model,
+            "default_branch": repo_index.default_branch,
             "repo_files_indexed": len(all_paths),
             "repo_python_files": len(py_paths),
             "results": results,
