@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Design tokens ──────────────────────────────────────────── */
+:root {
+  --ease-out:     cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out:  cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer:  cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ─── Base ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #0a0a0f;
+  color: #fff;
+  overflow-x: hidden;
+}
+
+/* ─── Intro scroll container ─────────────────────────────────── */
+.intro-scroll-container {
+  height: 600vh;          /* 6× viewport = scroll travel */
+  position: relative;
+}
+
+.intro-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── App shell (light theme) ────────────────────────────────── */
+.app-shell {
+  background: #f8f9fc;
+  color: #111827;
+  min-height: 100vh;
+}
+
+/* ─── Typography helpers ─────────────────────────────────────── */
+.text-cinematic {
+  font-size: clamp(3rem, 8vw, 7rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.text-milestone {
+  font-size: clamp(1.5rem, 4vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+/* ─── Scroll indicator bounce ────────────────────────────────── */
+@keyframes bounce-y {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(8px); }
+}
+.animate-bounce-y {
+  animation: bounce-y 1.6s var(--ease-in-out) infinite;
+}
+
+/* ─── Particle glow ──────────────────────────────────────────── */
+@keyframes particle-float {
+  0%   { transform: translateY(0)   rotate(0deg);   opacity: 0.6; }
+  50%  { transform: translateY(-20px) rotate(180deg); opacity: 1;   }
+  100% { transform: translateY(0)   rotate(360deg); opacity: 0.6; }
+}
+
+/* ─── Reduced motion overrides ───────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .animate-bounce-y { animation: none; }
+  .intro-scroll-container { height: 100vh; }
+}
+
+/* ─── Thin scrollbar for result panels ──────────────────────── */
+.thin-scroll::-webkit-scrollbar { width: 4px; }
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
+.thin-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
