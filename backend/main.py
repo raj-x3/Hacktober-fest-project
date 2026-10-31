@@ -50,10 +50,10 @@ _jobs: dict[str, dict[str, Any]] = {}
 
 STAGE_NAMES = [
     "Extracting research claims",
-    "Cloning repository",
-    "Indexing source files",
-    "Connecting claims to evidence",
-    "Generating the report",
+    "Indexing repository",
+    "Retrieving code evidence",
+    "Running Gemma 4 analysis",
+    "Validating citations",
 ]
 
 
@@ -183,13 +183,9 @@ async def _run_analysis(
             raise RuntimeError("No research claims could be extracted from the PDF.")
         _log(job, f"Extracted {len(claims)} claims from PDF")
 
-        # ── Stage 1: Clone repo ────────────────────────────────────────────
+        # ── Stage 1: Index repository ──────────────────────────────────────
         _advance(job, 1, repo_url)
         repo_root = await clone_repo(repo_url)
-
-        # ── Stage 2: Index files ───────────────────────────────────────────
-        _advance(job, 2)
-        # Build index ONCE — reused for every claim below
         repo_index = RepoIndex(repo_root)
         all_paths = repo_index.file_paths
         py_paths = [p for p in all_paths if p.endswith(".py")]
@@ -198,15 +194,20 @@ async def _run_analysis(
             _log(job, f"Python files: {', '.join(py_paths[:15])}" +
                  (" …" if len(py_paths) > 15 else ""))
 
-        # ── Stage 3: Connect claims → evidence ────────────────────────────
-        _advance(job, 3, f"{len(claims)} claims to process")
-        results: list[dict[str, Any]] = []
-
-        for claim_num, claim in enumerate(claims, 1):
-            _log(job, f"  [{claim_num}/{len(claims)}] Analysing: {claim['text'][:80]}…")
-
-            # Retrieve snippets from the SHARED index (no repeated disk walks)
+        # ── Stage 2: Retrieve code evidence ────────────────────────────────
+        _advance(job, 2, f"Searching repository for {len(claims)} claims")
+        claim_snippets: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
+        for claim in claims:
             snippets = repo_index.get_snippets_for_claim(claim["text"])
+            claim_snippets.append((claim, snippets))
+        _log(job, f"Retrieved candidate code snippets for {len(claims)} claims from {len(all_paths)} indexed files")
+
+        # ── Stage 3: Running Gemma 4 analysis ──────────────────────────────
+        _advance(job, 3, f"{len(claims)} claims to process with Gemma 4")
+        raw_evidences: list[tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]] = []
+
+        for claim_num, (claim, snippets) in enumerate(claim_snippets, 1):
+            _log(job, f"  [{claim_num}/{len(claims)}] Analysing: {claim['text'][:80]}…")
 
             if not snippets:
                 _log(job, f"    → No code snippets found in {len(all_paths)} indexed files")
@@ -252,6 +253,15 @@ async def _run_analysis(
                         "limitations": "Retry may succeed if the model was temporarily unavailable.",
                     }
 
+            raw_evidences.append((claim, snippets, evidence))
+            # Yield to the event loop between claims
+            await asyncio.sleep(0)
+
+        # ── Stage 4: Validating citations ──────────────────────────────────
+        _advance(job, 4, "Verifying citations, file paths and line numbers")
+        results: list[dict[str, Any]] = []
+
+        for claim, snippets, evidence in raw_evidences:
             # ── Step 1: Validate file path (reject hallucinated paths) ─────
             fp: Optional[str] = evidence.get("file_path") or None
             if fp and not repo_index.path_exists(fp):
@@ -306,9 +316,6 @@ async def _run_analysis(
                 "explanation": evidence.get("explanation", ""),
                 "limitations": evidence.get("limitations", ""),
             })
-
-            # Yield to the event loop between claims
-            await asyncio.sleep(0)
 
         # ── Stage 4: Build report ──────────────────────────────────────────
         _advance(job, 4)

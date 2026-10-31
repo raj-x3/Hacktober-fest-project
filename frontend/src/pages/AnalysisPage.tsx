@@ -7,11 +7,11 @@ import type { JobStatus } from '../lib/api'
 import type { AnalysisStage, OllamaStatus } from '../lib/types'
 
 const STAGES_META: Omit<AnalysisStage, 'status'>[] = [
-  { id: 'claims',  label: 'Extracting research claims',        detail: 'Parsing PDF and identifying experimental claims with Gemma…' },
-  { id: 'clone',   label: 'Cloning repository',                detail: 'Fetching repository files and commit history from GitHub…' },
-  { id: 'index',   label: 'Indexing source files',             detail: 'Prioritising Python modules, configs and training scripts…' },
-  { id: 'connect', label: 'Connecting claims to evidence',     detail: 'Asking Gemma 4 to locate verified code evidence for each claim…' },
-  { id: 'report',  label: 'Generating the report',            detail: 'Validating snippet line citations and structuring report…' },
+  { id: 'claims',    label: 'Extracting research claims', detail: 'Parsing PDF and identifying experimental claims with Gemma…' },
+  { id: 'index',     label: 'Indexing repository',        detail: 'Cloning repository and prioritising source files…' },
+  { id: 'retrieval', label: 'Retrieving code evidence',   detail: 'Searching codebase for functions, scripts and configs…' },
+  { id: 'gemma',     label: 'Running Gemma 4 analysis',   detail: 'Local Gemma 4 connecting claims to code evidence…' },
+  { id: 'validate',  label: 'Validating citations',       detail: 'Locating exact lines and validating source references…' },
 ]
 
 const POLL_INTERVAL = 1800 // ms

@@ -3,11 +3,11 @@ import { describe, it, beforeEach } from 'node:test'
 import type { AnalysisStage, JobStatus } from '../src/lib/types.ts'
 
 const STAGES_META: Omit<AnalysisStage, 'status'>[] = [
-  { id: 'claims',  label: 'Extracting research claims',        detail: 'Parsing PDF and identifying experimental claims with Gemma…' },
-  { id: 'clone',   label: 'Cloning repository',                detail: 'Fetching repository files and commit history from GitHub…' },
-  { id: 'index',   label: 'Indexing source files',             detail: 'Prioritising Python modules, configs and training scripts…' },
-  { id: 'connect', label: 'Connecting claims to evidence',     detail: 'Asking Gemma 4 to locate verified code evidence for each claim…' },
-  { id: 'report',  label: 'Generating the report',            detail: 'Validating snippet line citations and structuring report…' },
+  { id: 'claims',    label: 'Extracting research claims', detail: 'Parsing PDF and extracting experimental claims with Gemma…' },
+  { id: 'index',     label: 'Indexing repository',        detail: 'Cloning repository and prioritising source files…' },
+  { id: 'retrieval', label: 'Retrieving code evidence',   detail: 'Searching codebase for functions, scripts and configs…' },
+  { id: 'gemma',     label: 'Running Gemma 4 analysis',   detail: 'Local Gemma 4 connecting claims to code evidence…' },
+  { id: 'validate',  label: 'Validating citations',       detail: 'Locating exact lines and validating source references…' },
 ]
 
 function applyJobStatus(js: JobStatus): AnalysisStage[] {
@@ -42,7 +42,7 @@ describe('Analysis Workflow & Stage Progression', () => {
   it('marks previous stages as done and current stage as running at stage 2', () => {
     const js: JobStatus = {
       job_id: 'job-1',
-      stage: 'Indexing source files',
+      stage: 'Retrieving code evidence',
       stage_index: 2,
       total_stages: 5,
       done: false,
@@ -58,7 +58,7 @@ describe('Analysis Workflow & Stage Progression', () => {
   it('marks current stage as error when js.error is present', () => {
     const js: JobStatus = {
       job_id: 'job-1',
-      stage: 'Cloning repository',
+      stage: 'Indexing repository',
       stage_index: 1,
       total_stages: 5,
       done: true,

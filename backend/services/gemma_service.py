@@ -101,10 +101,20 @@ class GemmaService:
         raw = re.sub(r"^```(?:json)?\s*", "", raw.strip())
         raw = re.sub(r"\s*```$", "", raw.strip())
         try:
-            return json.loads(raw)
-        except json.JSONDecodeError as exc:
-            logger.error("Gemma returned non-JSON: %s", raw[:400])
-            raise ValueError(f"Gemma returned invalid JSON: {exc}") from exc
+            return json.loads(raw, strict=False)
+        except json.JSONDecodeError:
+            pass
+
+        # If model returned text around the JSON object, extract the JSON portion
+        match = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", raw)
+        if match:
+            try:
+                return json.loads(match.group(1), strict=False)
+            except json.JSONDecodeError:
+                pass
+
+        logger.error("Gemma returned non-JSON: %s", raw[:400])
+        raise ValueError(f"Gemma returned invalid JSON: {raw[:200]}")
 
     # ── PaperTrail analysis prompt ─────────────────────────────────────────
 
