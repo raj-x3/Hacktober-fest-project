@@ -8,16 +8,16 @@ Connect ML research papers with their GitHub implementations. Trace experimental
 
 ### Prerequisites
 
-| Tool | Version |
-|------|---------|
-| Node.js | ≥ 18 |
-| Python | ≥ 3.9 |
-| Ollama | latest |
-| Git | any |
+| Tool    | Version |
+| ------- | ------- |
+| Node.js | ≥ 18    |
+| Python  | ≥ 3.9   |
+| Ollama  | latest  |
+| Git     | any     |
 
 ### 1. Pull the model (one-time)
 
-```bash
+```
 ollama pull gemma4:e4b
 # Lower-resource alternative:
 # ollama pull gemma4:e2b
@@ -25,13 +25,13 @@ ollama pull gemma4:e4b
 
 ### 2. Start Ollama
 
-```bash
+```
 ollama serve
 ```
 
 ### 3. Start the backend
 
-```bash
+```
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate       # Windows: .venv\Scripts\activate
@@ -40,19 +40,20 @@ uvicorn main:app --port 8000 --reload
 ```
 
 Or simply:
-```bash
+
+```
 cd backend && ./start.sh
 ```
 
 ### 4. Start the frontend
 
-```bash
+```
 cd frontend
 npm install
 npm run dev
 ```
 
-Open **http://localhost:5173**
+Open **[http://localhost:5173](http://localhost:5173/)**
 
 ---
 
@@ -65,31 +66,45 @@ backend/    FastAPI + PyMuPDF + GitPython + Ollama (Gemma 4)
 
 ### Routes
 
-| Path | Description |
-|------|-------------|
-| `/` | Cinematic 3D scroll intro |
-| `/app` | Analysis workspace |
-| `/app/results/:id` | Results dashboard |
+| Path               | Description               |
+| ------------------ | ------------------------- |
+| `/`                | Cinematic 3D scroll intro |
+| `/app`             | Analysis workspace        |
+| `/app/results/:id` | Results dashboard         |
 
 ### API endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/health/ollama` | Ollama + model status |
-| POST | `/api/analyse` | Submit PDF + GitHub URL |
-| GET | `/api/analyse/:id/status` | Poll job progress |
-| GET | `/api/analyse/:id/report` | Fetch completed report |
+| Method | Path                      | Description             |
+| ------ | ------------------------- | ----------------------- |
+| GET    | `/api/health/ollama`      | Ollama + model status   |
+| POST   | `/api/analyse`            | Submit PDF + GitHub URL |
+| GET    | `/api/analyse/:id/status` | Poll job progress       |
+| GET    | `/api/analyse/:id/report` | Fetch completed report  |
 
 ---
 
 ## Models
 
-| Model | Use |
-|-------|-----|
-| `gemma4:e4b` | Primary — best quality |
+| Model        | Use                                |
+| ------------ | ---------------------------------- |
+| `gemma4:e4b` | Primary — best quality             |
 | `gemma4:e2b` | Alternative — lower resource usage |
 
 To switch models, change `DEFAULT_MODEL` in `backend/services/gemma_service.py`.
+
+**Privacy and execution:** Gemma 4 runs locally through Ollama. PaperTrail does not rely on cloud AI APIs for its core claim analysis.
+
+---
+
+## AI-Assisted Development
+
+DeepSeek was used as a coding assistant during PaperTrail's development.
+
+It supported the development process through coding assistance and implementation guidance.
+
+**Core application AI:** Gemma 4, running locally through Ollama, powers PaperTrail's research claim analysis and evidence evaluation.
+
+DeepSeek is acknowledged as a development assistant; it is not the AI model powering PaperTrail's analysis.
 
 ---
 
