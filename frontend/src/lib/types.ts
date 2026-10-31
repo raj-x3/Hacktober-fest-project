@@ -25,6 +25,9 @@ export interface AnalysisReport {
   repo_url: string
   created_at: string
   model_used: string
+  default_branch?: string
+  repo_files_indexed?: number
+  repo_python_files?: number
   results: EvidenceResult[]
   summary: {
     total_claims: number

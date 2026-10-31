@@ -1,16 +1,17 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { submitAnalysis, pollJob, getReport, saveRecentAnalysis } from '../lib/api'
+import { submitAnalysis, pollJob, getReport, saveRecentAnalysis, getOllamaStatus } from '../lib/api'
+import { isValidGitHubRepoUrl } from '../lib/github'
 import type { JobStatus } from '../lib/api'
-import type { AnalysisStage } from '../lib/types'
+import type { AnalysisStage, OllamaStatus } from '../lib/types'
 
 const STAGES_META: Omit<AnalysisStage, 'status'>[] = [
-  { id: 'claims',    label: 'Extracting research claims',          detail: 'Parsing PDF and identifying experimental claims…' },
-  { id: 'repo',      label: 'Inspecting repository files',         detail: 'Listing and categorising source files…' },
-  { id: 'code',      label: 'Analysing code and configurations',   detail: 'Reading Python modules, YAML configs and scripts…' },
-  { id: 'connect',   label: 'Connecting claims to evidence',       detail: 'Asking Gemma 4 to map claims to source evidence…' },
-  { id: 'report',    label: 'Generating the report',              detail: 'Structuring results and validating output…' },
+  { id: 'claims',  label: 'Extracting research claims',        detail: 'Parsing PDF and identifying experimental claims with Gemma…' },
+  { id: 'clone',   label: 'Cloning repository',                detail: 'Fetching repository files and commit history from GitHub…' },
+  { id: 'index',   label: 'Indexing source files',             detail: 'Prioritising Python modules, configs and training scripts…' },
+  { id: 'connect', label: 'Connecting claims to evidence',     detail: 'Asking Gemma 4 to locate verified code evidence for each claim…' },
+  { id: 'report',  label: 'Generating the report',            detail: 'Validating snippet line citations and structuring report…' },
 ]
 
 const POLL_INTERVAL = 1800 // ms
@@ -22,9 +23,37 @@ export default function AnalysisPage() {
   const [submitting, setSubmitting] = useState(false)
   const [stages, setStages] = useState<AnalysisStage[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [latestLog, setLatestLog] = useState<string | null>(null)
+  const [ollamaStatus, setOllamaStatus] = useState<OllamaStatus | null>(null)
+  const [checkingOllama, setCheckingOllama] = useState(true)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const navigate = useNavigate()
+
+  // Check Ollama health on mount
+  useEffect(() => {
+    let mounted = true
+    getOllamaStatus()
+      .then(st => {
+        if (mounted) {
+          setOllamaStatus(st)
+          setCheckingOllama(false)
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setOllamaStatus({
+            running: false,
+            model: 'gemma4:e4b',
+            model_available: false,
+            error: 'Could not connect to backend/Ollama.',
+          })
+          setCheckingOllama(false)
+        }
+      })
+    return () => { mounted = false }
+  }, [])
 
   // Clear polling on unmount
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
@@ -41,8 +70,12 @@ export default function AnalysisPage() {
     })), [])
 
   const handleFile = useCallback((file: File) => {
-    if (file.type !== 'application/pdf') {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
       setError('Please upload a PDF file.')
+      return
+    }
+    if (file.size <= 0) {
+      setError('The selected PDF file is empty.')
       return
     }
     setError(null)
@@ -59,13 +92,14 @@ export default function AnalysisPage() {
   const handleSubmit = useCallback(async () => {
     if (!pdf) { setError('Please upload a research paper (PDF).'); return }
     if (!repoUrl.trim()) { setError('Please enter a GitHub repository URL.'); return }
-    if (!/^https?:\/\/(www\.)?github\.com\//i.test(repoUrl.trim())) {
-      setError('Please enter a valid GitHub URL (e.g. https://github.com/user/repo).')
+    if (!isValidGitHubRepoUrl(repoUrl.trim())) {
+      setError('Please enter a valid public GitHub repository URL (e.g. https://github.com/owner/repo).')
       return
     }
 
     setError(null)
     setSubmitting(true)
+    setLatestLog('Starting analysis pipeline…')
     setStages(initStages())
 
     try {
@@ -76,6 +110,14 @@ export default function AnalysisPage() {
         try {
           const js = await pollJob(job_id)
           setStages(applyJobStatus(js))
+
+          if (js.log && js.log.length > 0) {
+            // Find most recent meaningful log message
+            const useful = js.log.filter(l => !l.startsWith('DEBUG') && !l.includes('Traceback'))
+            if (useful.length > 0) {
+              setLatestLog(useful[useful.length - 1])
+            }
+          }
 
           if (js.done || js.error) {
             clearInterval(pollRef.current!)
@@ -131,6 +173,37 @@ export default function AnalysisPage() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
           >
+            {/* ── Ollama status indicator ────────────────────── */}
+            {!checkingOllama && ollamaStatus && (
+              ollamaStatus.running && ollamaStatus.model_available ? (
+                <div className="flex items-center justify-between px-3.5 py-2 mb-5 rounded-lg bg-emerald-50 border border-emerald-200/60 text-xs text-emerald-800">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="font-medium">Ollama & {ollamaStatus.model} online</span>
+                  </div>
+                  <span className="text-[11px] text-emerald-600 font-mono">Local inference ready</span>
+                </div>
+              ) : (
+                <div className="p-3.5 mb-5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                  <div className="flex items-start gap-2.5">
+                    <svg className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                      <p className="font-semibold text-amber-800">
+                        {!ollamaStatus.running ? 'Local Ollama is not running' : `Model ${ollamaStatus.model} not found`}
+                      </p>
+                      <p className="mt-0.5 text-amber-700 leading-relaxed">
+                        {!ollamaStatus.running
+                          ? 'Start your local Ollama server by running "ollama serve" in a terminal.'
+                          : `Run "ollama pull ${ollamaStatus.model}" in your terminal to install the required model.`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            )}
+
             {/* ── PDF upload ─────────────────────────────────── */}
             <div className="mb-5">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -294,6 +367,14 @@ export default function AnalysisPage() {
                   </motion.div>
                 ))}
               </div>
+
+              {/* ── Live Progress Log ─────────────────────────── */}
+              {latestLog && (
+                <div className="mt-5 pt-4 border-t border-gray-100 flex items-start gap-2 text-xs text-gray-500 font-mono">
+                  <span className="text-brand-500 shrink-0 select-none">›</span>
+                  <span className="truncate">{latestLog}</span>
+                </div>
+              )}
             </div>
 
             <p className="text-xs text-gray-400 text-center">

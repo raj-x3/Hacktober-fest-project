@@ -128,7 +128,12 @@ class GemmaService:
 
         file_snippets: [{"path": str, "line_start": int, "line_end": int, "content": str}]
 
-        Returns a dict matching the EvidenceResult schema.
+        Returns a dict with status, file_path, code_snippet, explanation, limitations.
+
+        IMPORTANT: Gemma does NOT return line numbers.  Line numbers are derived
+        by the backend by locating Gemma's code_snippet verbatim in the actual file.
+        This prevents off-by-one errors caused by Gemma counting lines relative to
+        the snippet window rather than the whole file.
         """
         snippets_block = ""
         for s in file_snippets:
@@ -137,8 +142,6 @@ class GemmaService:
                 f"{s['content']}\n"
             )
 
-        # List only the file paths (no content) so the model knows
-        # what files were inspected and cannot invent paths from outside that set.
         provided_paths = "\n".join(
             f"  - {s['path']} (lines {s['line_start']}–{s['line_end']})"
             for s in file_snippets
@@ -162,32 +165,32 @@ Return a JSON object with exactly these fields:
   "claim_id": "{claim_id}",
   "status": "supported" | "ambiguous" | "missing",
   "file_path": "<exact path from the list above, or null>",
-  "line_start": <integer line number from the snippet above, or null>,
-  "line_end": <integer line number from the snippet above, or null>,
-  "code_snippet": "<verbatim excerpt from the provided content that supports or relates to the claim, or null>",
-  "explanation": "<2-4 sentences: how does this code relate to the research claim? Be specific about class names, function names and parameters you found.>",
-  "limitations": "<1-2 sentences: what cannot be verified from this code alone (e.g. actual training results, exact hyperparameter values used in the paper's experiments)?>"
+  "code_snippet": "<copy the single most relevant block of code VERBATIM from the provided content, preserving exact indentation and line breaks, or null if not applicable>",
+  "explanation": "<2-4 sentences: how does this code implement or relate to the research claim? Name specific functions, classes or parameters you found.>",
+  "limitations": "<1-2 sentences: what cannot be verified from this code alone?>"
 }}
 
 Strict rules:
 - "supported": clear implementation code for the claim exists in the provided snippets.
 - "ambiguous": code exists but only partially supports the claim, or the connection is indirect.
 - "missing": no relevant code was found in the provided snippets.
-- code_snippet must be copied verbatim from the provided content. Never paraphrase or invent it.
+- code_snippet must be COPIED VERBATIM from the provided content. Do NOT paraphrase, summarise or invent it.
 - file_path must be exactly one of the paths listed above, or null.
-- line_start and line_end must be integers within the snippet's range, or null.
-- Do not assert that paper experiments were reproduced or that numerical results match.
+- Do NOT include line_start or line_end — the system derives line numbers from your code_snippet automatically.
+- Do NOT assert that paper experiments were reproduced or that numerical results match.
 - If the snippets show only documentation (README, release notes), set status to "missing" unless
-  the documentation explicitly describes a verifiable implementation detail.
+  the documentation explicitly describes a verifiable implementation detail with code.
 """
         try:
             result = await self.generate_json(prompt, self.SYSTEM_PROMPT)
             if not isinstance(result, dict):
                 raise ValueError(f"Expected dict, got {type(result)}")
+            # Strip any line numbers Gemma may have hallucinated despite instructions
+            result.pop("line_start", None)
+            result.pop("line_end", None)
             return result
         except (ValueError, json.JSONDecodeError) as exc:
-            # Try to recover a partial JSON object
-            logger.warning("JSON parse failed for claim %s, attempting recovery: %s", claim_id, exc)
+            logger.warning("JSON parse failed for claim %s: %s", claim_id, exc)
             raise
 
 
