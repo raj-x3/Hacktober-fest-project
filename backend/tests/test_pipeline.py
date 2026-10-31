@@ -1450,3 +1450,18 @@ class TestSecurityAndLocalModelCompliance:
         assert "gemma4" in DEFAULT_MODEL
 
 
+class TestAnalysisPipelineStages:
+    def test_analysis_stages_match_specification(self):
+        from main import STAGE_NAMES
+        expected_stages = [
+            "Extracting research claims",
+            "Indexing repository",
+            "Retrieving code evidence",
+            "Running Gemma 4 analysis",
+            "Validating citations",
+        ]
+        assert STAGE_NAMES == expected_stages
+        assert len(STAGE_NAMES) == 5
+
+
+
