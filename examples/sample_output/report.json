@@ -1,0 +1,438 @@
+{
+  "id": "1b1a0d47-12a3-4109-9122-b82fe1aa916e",
+  "paper_title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+  "repo_url": "https://github.com/google-research/bert",
+  "created_at": "2026-10-31T20:22:59.244595Z",
+  "model_used": "gemma4:e4b",
+  "default_branch": "master",
+  "repo_files_indexed": 17,
+  "repo_python_files": 13,
+  "results": [
+    {
+      "claim": {
+        "id": "claim_0_0",
+        "text": "BERT is designed to pre-train deep bidirectional representations from unlabeled text by jointly conditioning on both left and right context in all layers.",
+        "page": null
+      },
+      "status": "missing",
+      "file_path": null,
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": null,
+      "explanation": "The claim describes the internal architectural design of BERT (bidirectional context conditioning in all layers). The provided snippets only show the data preparation logic and the high-level wrapper function (`model_fn_builder`) that instantiates a `modeling.BertModel`. The actual implementation of the BERT model, which would contain the self-attention mechanism, is not available in the provided files.",
+      "limitations": "Without access to the `modeling.py` file, it is impossible to verify the claim regarding the bidirectional nature of the representations."
+    },
+    {
+      "claim": {
+        "id": "claim_0_1",
+        "text": "The pre-trained BERT model can be fine-tuned with just one additional output layer.",
+        "page": null
+      },
+      "status": "missing",
+      "file_path": "extract_features.py",
+      "line_start": 200,
+      "line_end": 201,
+      "code_snippet": "    for (i, layer_index) in enumerate(layer_indexes):\n      predictions[\"layer_output_%d\" % i] = all_layers[layer_index]",
+      "explanation": "The provided code snippets focus on feature extraction from pre-trained BERT models, not the fine-tuning process itself. The code shows that the model can be configured to output multiple layers based on the `layer_indexes` flag, which does not verify the claim about using only one additional output layer for fine-tuning.",
+      "limitations": "The snippets do not contain the training loop or the definition of the classification head, which is necessary to verify the claim."
+    },
+    {
+      "claim": {
+        "id": "claim_0_2",
+        "text": "BERT obtains new state-of-the-art results on eleven natural language processing tasks.",
+        "page": null
+      },
+      "status": "missing",
+      "file_path": null,
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": null,
+      "explanation": "The research claim asserts a specific experimental outcome (achieving state-of-the-art results on eleven tasks). The provided code snippets only contain implementation details, such as data creation logic or model configuration, and do not contain any performance metrics or experimental results.",
+      "limitations": "The provided files are limited to source code and configuration, not experimental logs or performance reports."
+    },
+    {
+      "claim": {
+        "id": "claim_0_3",
+        "text": "BERT pushes the GLUE score to 80.5% (7.7% point absolute improvement).",
+        "page": null
+      },
+      "status": "missing",
+      "file_path": null,
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": null,
+      "explanation": "The claim refers to a specific quantitative experimental result (GLUE score). The provided files implement data preprocessing (create_pretraining_data.py) and feature extraction/inference (extract_features.py, modeling.py). None of the snippets contain code related to the calculation or reporting of GLUE scores or other performance metrics.",
+      "limitations": "The code only covers model configuration and feature extraction, not the final evaluation phase."
+    },
+    {
+      "claim": {
+        "id": "claim_0_4",
+        "text": "BERT achieves MultiNLI accuracy of 86.7% (4.6% absolute improvement).",
+        "page": null
+      },
+      "status": "missing",
+      "file_path": null,
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": null,
+      "explanation": "The research claim reports a specific experimental result (MultiNLI accuracy of 86.7%). The provided files contain only the implementation logic for BERT (modeling.py, extract_features.py) and unit tests (optimization_test.py). None of the snippets contain the reported numerical performance metrics.",
+      "limitations": "The code snippets do not include any training logs, evaluation scripts, or final results that would verify this claim."
+    },
+    {
+      "claim": {
+        "id": "claim_0_5",
+        "text": "BERT achieves SQuAD v1.1 question answering Test F1 of 93.2 (1.5 point absolute improvement).",
+        "page": null
+      },
+      "status": "missing",
+      "file_path": null,
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": null,
+      "explanation": "The provided code snippets detail the configuration of the BERT model and the process of extracting features for inference. However, none of the files contain the training or evaluation loops necessary to calculate the SQuAD F1 score, nor do they contain any numerical performance results.",
+      "limitations": "The code only shows the model architecture and data processing pipeline, not the experimental results."
+    },
+    {
+      "claim": {
+        "id": "claim_0_6",
+        "text": "BERT achieves SQuAD v2.0 Test F1 of 83.1 (5.1 point absolute improvement).",
+        "page": null
+      },
+      "status": "missing",
+      "file_path": null,
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": null,
+      "explanation": "The provided files detail the implementation of BERT, covering configuration (modeling.py), data creation (create_pretraining_data.py), and feature extraction/inference (extract_features.py). None of the snippets contain the experimental results or evaluation code necessary to verify the specific SQuAD v2.0 F1 score of 83.1.",
+      "limitations": "The claim is a quantitative experimental result, which cannot be verified solely through the provided implementation code."
+    },
+    {
+      "claim": {
+        "id": "claim_0_7",
+        "text": "BERT alleviates the undirectionality constraint by using a \u201cmasked language model\u201d (MLM) pre-training objective.",
+        "page": null
+      },
+      "status": "ambiguous",
+      "file_path": "create_pretraining_data.py",
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": "def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq, vocab_words, rng):\n  \"\"\"Creates the predictions for the masked LM objective.\"\"\"\n\n  cand_indexes = []\n  for (i, token) in enumerate(tokens):\n    if token == \"[CLS]\" or token == \"[SEP]\":\n      continue\n    # Whole Word Masking means that if we mask all of the wordpieces\n    # corresponding to an original word. When a word has been split into\n    # WordPieces, the first token does not have any marker and any subsequence\n    # tokens are prefixed with ##. So whenever we see the ## token, we\n    # append it to the previous set of word indexes.\n    #\n    # Note that Whole Word Masking does *not* change the training code\n    # at all -- we still predict each WordPiece independently, softmaxed\n    # over the entire vocabulary.\n    if (FLAGS.do_whole_word_mask and len(cand_indexes) >= 1 and\n        token.startswith(\"##\")):\n      cand_indexes[-1].append(i)\n    else:\n      cand_indexes.append([i])\n\n  rng.shuffle(cand_indexes)\n\n  output_tokens = list(tokens)\n\n  num_to_predict = min(max_predictions_per_seq, \n                       max(1, int(round(len(tokens) * masked_lm_prob))))\n\n  masked_lms = []\n  covered_indexes = set()\n  for index_set in cand_indexes:\n    if len(masked_lms) >= num_to_predict:\n      break\n    # If adding a whole-word mask would exceed the maximum number of\n    # predictions, then just skip this candidate.\n    if len(masked_lms) + len(index_set) > num_to_predict:\n      continue\n    is_any_index_covered = False\n    for index in index_set:\n      if index in covered_indexes:\n        is_any_index_covered = True\n        break\n    if is_any_index_covered:\n      continue\n    for index in index_set:\n      covered_indexes.add(index)\n\n      masked_token = None\n      # 80% of the time, replace with [MASK]\n      if rng.random() < 0.8:\n        masked_token = \"[MASK]\"\n      else:\n        # 10% of the time, keep original\n        if rng.random() < 0.5:\n          masked_token = tokens[index]\n        # 10% of the time, replace with random word\n        else:\n          masked_token = vocab_words[rng.randint(0, len(vocab_words) - 1)]\n\n      output_tokens[index] = masked_token\n\n      masked_lms.append(MaskedLmInstance(index=index, label=tokens[index]))\n  assert len(masked_lms) <= num_to_predict\n  masked_lms = sorted(masked_lms, key=lambda x: x.index)\n\n  masked_lm_positions = []\n  masked_lm_labels = []\n  for p in masked_lms:\n    masked_lm_positions.append(p.index)\n    masked_lm_labels.append(p.label)\n\n  return (output_tokens, masked_lm_positions, masked_lm_labels)",
+      "explanation": "This function, `create_masked_lm_predictions`, directly implements the Masked Language Model (MLM) objective. It iterates through tokens, selects candidates, and replaces them with '[MASK]', the original token, or a random word based on probabilities (0.8, 0.1, 0.1). The `masked_lm_prob` flag controls the density of this objective.",
+      "limitations": "The code only shows the data generation process, not the training objective itself, so the claim about 'alleviating undirectionality' remains a theoretical assertion. (Exact code excerpt could not be located in the file; line numbers are unavailable.)"
+    },
+    {
+      "claim": {
+        "id": "claim_0_8",
+        "text": "BERT uses a \u201cnext sentence prediction\u201d task that jointly pre-trains text-pair representations.",
+        "page": null
+      },
+      "status": "supported",
+      "file_path": "create_pretraining_data.py",
+      "line_start": 269,
+      "line_end": 273,
+      "code_snippet": "        # Random next\n        is_random_next = False\n        if len(current_chunk) == 1 or rng.random() < 0.5:\n          is_random_next = True\n          target_b_length = target_seq_length - len(tokens_a)\n",
+      "explanation": "The function `create_instances_from_document` implements the Next Sentence Prediction (NSP) task. It randomly sets the `is_random_next` flag to True (50% of the time) to determine if the second segment (B) should be a random sentence from another document, thereby jointly pre-training text-pair representations.",
+      "limitations": "This code only shows the data generation logic, not the actual model training or loss function implementation."
+    },
+    {
+      "claim": {
+        "id": "claim_0_9",
+        "text": "OpenAI GPT uses a left-to-right architecture where every token can only attend to previous tokens in the self-attention layers of the Transformer.",
+        "page": null
+      },
+      "status": "missing",
+      "file_path": "modeling.py",
+      "line_start": 644,
+      "line_end": 716,
+      "code_snippet": "  if len(from_shape) == 3:\n    batch_size = from_shape[0]\n    from_seq_length = from_shape[1]\n    to_seq_length = to_shape[1]\n\n  # Scalar dimensions referenced here:\n  #   B = batch size (number of sequences)\n  #   F = `from_tensor` sequence length\n  #   T = `to_tensor` sequence length\n  #   N = `num_attention_heads`\n  #   H = `size_per_head`\n\n  from_tensor_2d = reshape_to_matrix(from_tensor)\n  to_tensor_2d = reshape_to_matrix(to_tensor)\n\n  # `query_layer` = [B*F, N*H]\n  query_layer = tf.layers.dense(\n      from_tensor_2d,\n      num_attention_heads * size_per_head,\n      activation=query_act,\n      name=\"query\",\n      kernel_initializer=create_initializer(initializer_range))\n\n  # `key_layer` = [B*T, N*H]\n  key_layer = tf.layers.dense(\n      to_tensor_2d,\n      num_attention_heads * size_per_head,\n      activation=key_act,\n      name=\"key\",\n      kernel_initializer=create_initializer(initializer_range))\n\n  # `value_layer` = [B*T, N*H]\n  value_layer = tf.layers.dense(\n      to_tensor_2d,\n      num_attention_heads * size_per_head,\n      activation=value_act,\n      name=\"value\",\n      kernel_initializer=create_initializer(initializer_range))\n\n  # `query_layer` = [B, N, F, H]\n  query_layer = transpose_for_scores(query_layer, batch_size,\n                                     num_attention_heads, from_seq_length,\n                                     size_per_head)\n\n  # `key_layer` = [B, N, T, H]\n  key_layer = transpose_for_scores(key_layer, batch_size, num_attention_heads,\n                                   to_seq_length, size_per_head)\n\n  # Take the dot product between \"query\" and \"key\" to get the raw\n  # attention scores.\n  # `attention_scores` = [B, N, F, T]\n  attention_scores = tf.matmul(query_layer, key_layer, transpose_b=True)\n  attention_scores = tf.multiply(attention_scores,\n                                 1.0 / math.sqrt(float(size_per_head)))\n\n  if attention_mask is not None:\n    # `attention_mask` = [B, 1, F, T]\n    attention_mask = tf.expand_dims(attention_mask, axis=[1])\n\n    # Since attention_mask is 1.0 for positions we want to attend and 0.0 for\n    # masked positions, this operation will create a tensor which is 0.0 for\n    # positions we want to attend and -10000.0 for masked positions.\n    adder = (1.0 - tf.cast(attention_mask, tf.float32)) * -10000.0\n\n    # Since we are adding it to the raw scores before the softmax, this is\n    # effectively the same as removing these entirely.\n    attention_scores += adder",
+      "explanation": "The provided code implements a standard self-attention mechanism using `attention_layer` within `modeling.py`. This mechanism relies on an `attention_mask` to mask positions, which is characteristic of bidirectional encoders (like BERT) used to mask padding tokens, not a causal mask that restricts attention to only previous tokens. There is no implementation of a triangular mask to enforce left-to-right causality.",
+      "limitations": "The code implements a BERT-like architecture, which is inherently bidirectional, and does not contain the specific causal masking required to verify the GPT claim."
+    },
+    {
+      "claim": {
+        "id": "claim_0_0",
+        "text": "BERT is the first fine-tuning based representation model that achieves state-of-the-art performance on a large suite of sentence-level and token-level tasks, outperforming many task-specific architectures.",
+        "page": null
+      },
+      "status": "missing",
+      "file_path": null,
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": null,
+      "explanation": "The provided files contain the implementation details of the BERT model, including data creation (Masked LM, Next Sentence Prediction) and the transformer architecture. However, they do not contain any experimental results, performance metrics, or comparisons to other architectures. The claim is purely about empirical performance and competitive results.",
+      "limitations": "The code only shows the model's construction, not its empirical performance."
+    },
+    {
+      "claim": {
+        "id": "claim_0_1",
+        "text": "BERT advances the state of the art for eleven NLP tasks.",
+        "page": null
+      },
+      "status": "missing",
+      "file_path": "run_classifier.py",
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": "  # The convention in BERT is:\n  # (a) For sequence pairs:\n  #  tokens:   [CLS] is this jack ##son ##ville ? [SEP] no it is not . [SEP]\n  #  type_ids: 0     0  0    0    0     0       0 0     1  1  1  1   1 1\n  # (b) For single sequences:\n  #  tokens:   [CLS] the dog is hairy . [SEP]\n  #  type_ids: 0     0   0   0  0     0 0\n  #\n  # Where \"type_ids\" are used to indicate whether this is the first\n  # sequence or the second sequence. The embedding vectors for `type=0` and\n  # `type=1` were learned during pre-training and are added to the wordpiece\n  # embedding vector (and position vector). This is not *strictly* necessary\n  # since the [SEP] token unambiguously separates the sequences, but it makes\n  # it easier for the model to learn the concept of sequences.\n  #\n  # For classification tasks, the first vector (corresponding to [CLS]) is\n  # used as the \"sentence vector\". Note that this only makes sense because\n  # the entire model is fine-tuned.\ntokens = []\n  segment_ids = []\ntokens.append(\"[CLS]\")\n  segment_ids.append(0)\n  for token in tokens_a:\n    tokens.append(token)\n    segment_ids.append(0)\n  tokens.append(\"[SEP]\")\n  segment_ids.append(0)\n\n  if tokens_b:\n    for token in tokens_b:\n      tokens.append(token)\n      segment_ids.append(1)\n    tokens.append(\"[SEP]\")\n    segment_ids.append(1)\n\n  input_ids = tokenizer.convert_tokens_to_ids(tokens)\n\n  # The mask has 1 for real tokens and 0 for padding tokens. Only real\n  # tokens are attended to.\n  input_mask = [1] * len(input_ids)\n\n  # Zero-pad up to the sequence length.\n  while len(input_ids) < max_seq_length:\n    input_ids.append(0)\n    input_mask.append(0)\n    segment_ids.append(0)\n\n  assert len(input_ids) == max_seq_length\n  assert len(input_mask) == max_seq_length",
+      "explanation": "This code snippet demonstrates the input feature construction process for sequence pair tasks, which is a core mechanism used in NLP tasks. It shows how tokens and segment_ids are generated and padded to match the required sequence length. The logic confirms that the model is designed for classification tasks, as noted in the comments.",
+      "limitations": "The provided code only shows the implementation of the input pipeline and does not contain any performance metrics, experimental results, or comparisons to verify the claim about advancing the state of the art. (Exact code excerpt could not be located in the file; line numbers are unavailable.)"
+    },
+    {
+      "claim": {
+        "id": "claim_0_2",
+        "text": "Apart from output layers, the same architectures are used in both pre-training and fine-tuning.",
+        "page": null
+      },
+      "status": "ambiguous",
+      "file_path": "extract_features.py",
+      "line_start": 160,
+      "line_end": 166,
+      "code_snippet": "    model = modeling.BertModel(\n        config=bert_config,\n        is_training=False,\n        input_ids=input_ids,\n        input_mask=input_mask,\n        token_type_ids=input_type_ids,\n        use_one_hot_embeddings=use_one_hot_embeddings)\n",
+      "explanation": "The function `model_fn_builder` in `extract_features.py` constructs the core encoder architecture using `modeling.BertModel`. This model is initialized with a configuration (`bert_config`) and input features, representing the shared architecture used for feature extraction (a step related to fine-tuning).",
+      "limitations": "The provided snippets do not contain the pre-training implementation, so it cannot be verified that the exact same architecture is used during the pre-training phase."
+    },
+    {
+      "claim": {
+        "id": "claim_0_3",
+        "text": "The same pre-trained model parameters are used to initialize models for different downstream tasks.",
+        "page": null
+      },
+      "status": "ambiguous",
+      "file_path": null,
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": null,
+      "explanation": "Snippets were found (6 from create_pretraining_data.py:L22-91, extract_features.py:L10-94, extract_features.py:L132-281, extract_features.py:L332-413, modeling.py:L1-265, modeling.py:L304-532) but Gemma analysis failed: Gemma returned invalid JSON: Invalid control character at: line 5 column 40 (char 131)",
+      "limitations": "Retry may succeed if the model was temporarily unavailable."
+    },
+    {
+      "claim": {
+        "id": "claim_0_4",
+        "text": "During fine-tuning, all parameters are fine-tuned.",
+        "page": null
+      },
+      "status": "supported",
+      "file_path": "optimization.py",
+      "line_start": 159,
+      "line_end": 167,
+      "code_snippet": "  def _do_use_weight_decay(self, param_name):\n    \"\"\"Whether to use L2 weight decay for `param_name`.\"\"\"\n    if not self.weight_decay_rate:\n      return False\n    if self.exclude_from_weight_decay:\n      for r in self.exclude_from_weight_decay:\n        if re.search(r, param_name) is not None:\n          return False\n    return True",
+      "explanation": "The `AdamWeightDecayOptimizer` class includes the `_do_use_weight_decay` method, which allows specific parameter names (like 'LayerNorm' or 'bias') to be excluded from the L2 regularization term. However, the optimization process relies on `tf.trainable_variables()` which includes all parameters, and the gradient calculation (`tf.gradients(loss, tvars)`) applies to all of them, meaning all parameters are updated by gradient descent during fine-tuning.",
+      "limitations": "The code only shows the mechanism for excluding parameters from weight decay, not a mechanism that freezes or excludes them from the gradient update step itself."
+    },
+    {
+      "claim": {
+        "id": "claim_0_5",
+        "text": "The framework consists of two steps: pre-training and fine-tuning.",
+        "page": null
+      },
+      "status": "ambiguous",
+      "file_path": null,
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": null,
+      "explanation": "Snippets were found (6 from create_pretraining_data.py:L52-131, create_pretraining_data.py:L163-269, create_pretraining_data.py:L308-389, create_pretraining_data.py:L435-469, extract_features.py:L146-195, extract_features.py:L225-274) but Gemma analysis failed: Gemma returned invalid JSON: Invalid control character at: line 5 column 40 (char 131)",
+      "limitations": "Retry may succeed if the model was temporarily unavailable."
+    },
+    {
+      "claim": {
+        "id": "claim_0_6",
+        "text": "During pre-training, the model is trained on unlabeled data over different pre-training tasks.",
+        "page": null
+      },
+      "status": "supported",
+      "file_path": "create_pretraining_data.py",
+      "line_start": 308,
+      "line_end": 333,
+      "code_snippet": "        for token in tokens_a:\n          tokens.append(token)\n          segment_ids.append(0)\n\n        tokens.append(\"[SEP]\")\n        segment_ids.append(0)\n\n        for token in tokens_b:\n          tokens.append(token)\n          segment_ids.append(1)\n        tokens.append(\"[SEP]\")\n        segment_ids.append(1)\n\n        (tokens, masked_lm_positions, \n         masked_lm_labels) = create_masked_lm_predictions(\n             tokens, masked_lm_prob, max_predictions_per_seq, vocab_words, rng)\n        instance = TrainingInstance(\n            tokens=tokens,\n            segment_ids=segment_ids,\n            is_random_next=is_random_next,\n            masked_lm_positions=masked_lm_positions,\n            masked_lm_labels=masked_lm_labels)\n        instances.append(instance)\n      current_chunk = []\n      current_length = 0\n    i += 1",
+      "explanation": "The `create_instances_from_document` function processes raw text segments (A and B) to create training instances. It uses the `is_random_next` flag to implement Next Sentence Prediction (NSP) and calls `create_masked_lm_predictions` to implement Masked Language Modeling (MLM). This demonstrates the use of multiple pre-training tasks on unlabeled data.",
+      "limitations": "The provided code only handles data generation, not the actual training objective or loss function."
+    },
+    {
+      "claim": {
+        "id": "claim_0_7",
+        "text": "For fine-tuning, the BERT model is initialized with the pre-trained parameters, and all of the parameters are fine-tuned using labeled data from the downstream tasks.",
+        "page": null
+      },
+      "status": "ambiguous",
+      "file_path": null,
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": null,
+      "explanation": "Snippets were found (6 from create_pretraining_data.py:L22-76, create_pretraining_data.py:L220-269, extract_features.py:L10-101, extract_features.py:L132-281, extract_features.py:L332-413, modeling.py:L1-176) but Gemma analysis failed: Gemma returned invalid JSON: Invalid control character at: line 5 column 40 (char 129)",
+      "limitations": "Retry may succeed if the model was temporarily unavailable."
+    },
+    {
+      "claim": {
+        "id": "claim_0_8",
+        "text": "Each downstream task has separate fine-tuned models, even though they are initialized with the same pre-trained parameters.",
+        "page": null
+      },
+      "status": "ambiguous",
+      "file_path": "extract_features.py",
+      "line_start": 173,
+      "line_end": 184,
+      "code_snippet": "    (assignment_map,\n     initialized_variable_names) = modeling.get_assignment_map_from_checkpoint(\n         tvars, init_checkpoint)\n    if use_tpu:\n\n      def tpu_scaffold():\n        tf.train.init_from_checkpoint(init_checkpoint, assignment_map)\n        return tf.train.Scaffold()\n\n      scaffold_fn = tpu_scaffold\n    else:\n      tf.train.init_from_checkpoint(init_checkpoint, assignment_map)",
+      "explanation": "The code uses the `init_checkpoint` flag to load pre-trained parameters via `modeling.get_assignment_map_from_checkpoint` and `tf.train.init_from_checkpoint`. This confirms that models are initialized using shared pre-trained parameters. However, the provided snippets do not contain the high-level training loop or task management logic to confirm that each downstream task is assigned a distinct model instance.",
+      "limitations": "We cannot verify if the system enforces the use of separate models for each downstream task, only that the initialization mechanism supports it."
+    },
+    {
+      "claim": {
+        "id": "claim_0_0",
+        "text": "BERTBASE model size is defined by L=12 layers, H=768 hidden size, A=12 attention heads, and 110M total parameters.",
+        "page": null
+      },
+      "status": "missing",
+      "file_path": null,
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": null,
+      "explanation": "The claim specifies concrete architectural parameters (L=12, H=768, A=12, 110M parameters). While the code in extract_features.py shows that the model configuration is loaded from a file using `modeling.BertConfig.from_json_file(FLAGS.bert_config_file)`, the content of this configuration file is not provided. Therefore, the specific values claimed cannot be verified.",
+      "limitations": "The code only demonstrates the mechanism for loading the configuration, not the configuration itself."
+    },
+    {
+      "claim": {
+        "id": "claim_0_1",
+        "text": "BERTLARGE model size is defined by L=24 layers, H=1024 hidden size, A=16 attention heads, and 340M total parameters.",
+        "page": null
+      },
+      "status": "missing",
+      "file_path": null,
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": null,
+      "explanation": "The claim specifies concrete values for layers (L=24), hidden size (H=1024), attention heads (A=16), and total parameters (340M). While `extract_features.py` references a `bert_config_file` which is intended to define the model architecture, the contents of this configuration file are not provided in the snippets.",
+      "limitations": "The provided code only shows the flag definitions and execution logic, not the specific numerical values for the model configuration or the resulting parameter count."
+    },
+    {
+      "claim": {
+        "id": "claim_0_2",
+        "text": "The feed-forward/filter size is set to 4H, resulting in a size of 3072 for H=768 and 4096 for H=1024.",
+        "page": null
+      },
+      "status": "missing",
+      "file_path": null,
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": null,
+      "explanation": "The claim asserts a specific mathematical relationship (intermediate_size = 4 * hidden_size) and resulting values (3072 and 4096). While the provided code snippets define `intermediate_size` as a parameter in `BertConfig` and `transformer_model`, none of the files contain the implementation or calculation that derives `intermediate_size` from `hidden_size` using the factor of 4.",
+      "limitations": "The snippets only show the parameters being used, not the underlying calculation logic."
+    },
+    {
+      "claim": {
+        "id": "claim_0_3",
+        "text": "The implementation uses WordPiece embeddings with a 30,000 token vocabulary.",
+        "page": null
+      },
+      "status": "ambiguous",
+      "file_path": null,
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": null,
+      "explanation": "Snippets were found (6 from create_pretraining_data.py:L7-469, extract_features.py:L11-127, extract_features.py:L133-419, modeling.py:L27-288, modeling.py:L368-607, modeling.py:L695-800) but Gemma analysis failed: Gemma returned invalid JSON: Invalid control character at: line 5 column 469 (char 567)",
+      "limitations": "Retry may succeed if the model was temporarily unavailable."
+    },
+    {
+      "claim": {
+        "id": "claim_0_4",
+        "text": "In the Masked LM pre-training task, 15% of all WordPiece tokens in each sequence are masked at random.",
+        "page": null
+      },
+      "status": "supported",
+      "file_path": "create_pretraining_data.py",
+      "line_start": 369,
+      "line_end": 374,
+      "code_snippet": "  num_to_predict = min(max_predictions_per_seq,\n                       max(1, int(round(len(tokens) * masked_lm_prob))))\n\n  masked_lms = []\n  covered_indexes = set()\n  for index_set in cand_indexes:",
+      "explanation": "The `create_masked_lm_predictions` function calculates the number of tokens to mask (`num_to_predict`) by rounding the sequence length (`len(tokens)`) multiplied by `masked_lm_prob`. The `masked_lm_prob` flag is defined as 0.15, which corresponds to 15%. The subsequent loop then randomly selects and masks these tokens.",
+      "limitations": "The code shows the calculation of the target number of masks, but does not explicitly prove that the masking process is entirely random."
+    },
+    {
+      "claim": {
+        "id": "claim_0_5",
+        "text": "The BERT Transformer uses bidirectional self-attention, which differs from the constrained self-attention used by the GPT Transformer.",
+        "page": null
+      },
+      "status": "supported",
+      "file_path": "modeling.py",
+      "line_start": 754,
+      "line_end": 776,
+      "code_snippet": "def transformer_model(input_tensor,\n                      attention_mask=None,\n                      hidden_size=768,\n                      num_hidden_layers=12,\n                      num_attention_heads=12,\n                      intermediate_size=3072,\n                      intermediate_act_fn=gelu,\n                      hidden_dropout_prob=0.1,\n                      attention_probs_dropout_prob=0.1,\n                      initializer_range=0.02,\n                      do_return_all_layers=False):\n  \"\"\"Multi-headed, multi-layer Transformer from \"Attention is All You Need\".\n\n  This is almost an exact implementation of the original Transformer encoder.\n\n  See the original paper:\n  https://arxiv.org/abs/1706.03762\n\n  Also see:\n  https://github.com/tensorflow/tensor2tensor/blob/master/tensor2tensor/models/transformer.py\n\n  Args:\n    input_tensor: float Tensor of shape [batch_size, seq_length, hidden_size].\n    attention_mask: (optional) int32 Tensor of shape [batch_size, seq_length, seq_length], with 1 for positions that can be attended to and 0 in\n      positions that should not be.\n    hidden_size: int. Hidden size of the Transformer.\n    num_hidden_layers: int. Number of layers (blocks) in the Transformer.\n    num_attention_heads: int. Number of attention heads in the Transformer.\n    intermediate_size: int. The size of the \"intermediate\" (a.k.a., feed\n      forward) layer.\n    intermediate_act_fn: function. The non-linear activation function to apply\n      to the output of the intermediate/feed-forward layer.\n    hidden_dropout_prob: float. Dropout probability for the hidden layers.\n    attention_probs_dropout_prob: float. Dropout probability of the attention\n      probabilities.\n    initializer_range: float. Range of the initializer (stddev of truncated\n      normal).\n    do_return_all_layers: Whether to also return all layers or just the final\n      layer.\n\n  Returns:\n    float Tensor of shape [batch_size, seq_length, hidden_size], the final\n    hidden layer of the Transformer.\n\n  Raises:\n    ValueError: A Tensor shape or parameter is invalid.\n  \"\"\n  if hidden_size % num_attention_heads != 0:\n    raise ValueError(\n        \"The hidden size (%d) is not a multiple of the number of attention \"\n        \"heads (%d)\" % (hidden_size, num_attention_heads))\n\n  attention_head_size = int(hidden_size / num_attention_heads)\n  input_shape = get_shape_list(input_tensor, expected_rank=3)\n  batch_size = input_shape[0]\n  seq_length = input_shape[1]\n  input_width = input_shape[2]\n\n  # The Transformer performs sum residuals on all layers so the input needs\n  # to be the same as the hidden size.\n  if input_width != hidden_size:\n    raise ValueError(\"The width of the input tensor (%d) != hidden size (%d)\" %\n                     (input_width, hidden_size))\n\n  # We keep the representation as a 2D tensor to avoid re-shaping it back and\n  # forth from a 3D tensor to a 2D tensor. Re-shapes are normally free on\n  # the GPU/CPU but may not be free on the TPU, so we want to minimize them to\n  # help the optimizer.\n  prev_output = reshape_to_matrix(input_tensor)\n\n  all_layer_outputs = []\n  for layer_idx in range(num_hidden_layers):\n    with tf.variable_scope(\"layer_%d\" % layer_idx):\n      layer_input = prev_output\n\n      with tf.variable_scope(\"attention\"):\n        attention_heads = []\n        with tf.variable_scope(\"self\"):\n          attention_head = attention_layer(\n              from_tensor=layer_input,\n              to_tensor=layer_input,\n              attention_mask=attention_mask,\n              num_attention_heads=num_attention_heads,\n              size_per_head=attention_head_size,\n              attention_probs_dropout_prob=attention_probs_dropout_prob,\n              initializer_range=initializer_range,\n              do_return_2d_tensor=True,\n              batch_size=batch_size,\n              from_seq_length=seq_length,\n              to_seq_length=seq_length)\n          attention_heads.append(attention_head)\n\n        attention_output = None\n        if len(attention_heads) == 1:\n          attention_output = attention_heads[0]\n        else:\n          # In the case where we have other sequences, we just concatenate\n          # them to the self-attention head before the projection.\n          attention_output = tf.concat(attention_heads, axis=-1)\n\n        # Run a linear projection of `hidden_size` then add a residual\n        # with `layer_input`.\n        with tf.variable_scope(\"output\"):\n          attention_output = tf.layers.dense(\n              attention_output,\n              hidden_size,\n              kernel_initializer=create_initializer(initializer_range))\n          attention_output = dropout(attention_output, hidden_dropout_prob)\n          attention_output = layer_norm(attention_output + layer_input)\n\n      # The activation is only applied to the \"intermediate\" hidden layer.\n      with tf.variable_scope(\"intermediate\"):\n        intermediate_output = tf.layers.dense(\n            attention_output,\n            intermediate_size,\n            activation=intermediate_act_fn,\n            kernel_initializer=create_initializer(initializer_range))\n\n      # Down-project back to `hidden_size` then add the residual.\n      with tf.variable_scope(\"output\"):\n        layer_output = tf.layers.dense(\n            intermediate_output,\n            hidden_size,\n            kernel_initializer=create_initializer(initializer_range))\n        layer_output = dropout(layer_output, hidden_dropout_prob)\n        layer_output = layer_norm(layer_output + attention_output)\n        prev_output = layer_output\n        all_layer_outputs.append(layer_output)\n\n  if do_return_all_layers:\n    final_outputs = []\n    for layer_output in all_layer_outputs:\n      final_output = reshape_from_matrix(layer_output, input_shape)\n      final_outputs.append(final_output)\n    return final_outputs\n  else:\n    final_output = reshape_from_matrix(prev_output, input_shape)\n    return final_output",
+      "explanation": "The `transformer_model` function implements a stack of layers, and within each layer, `attention_layer` is called with `from_tensor=layer_input, to_tensor=layer_input`. This structure ensures that the input attends to itself, which is the definition of self-attention. Since the implementation is based on the original Transformer encoder, it is inherently bidirectional (as opposed to a constrained decoder stack).",
+      "limitations": "The code does not contain an explicit implementation of a constrained (causal) self-attention mechanism, so the difference from GPT's architecture is inferred from the implementation style rather than explicitly shown."
+    },
+    {
+      "claim": {
+        "id": "claim_0_0",
+        "text": "In all of our experiments, we mask 15% of all WordPiece tokens in each sequence at random.",
+        "page": null
+      },
+      "status": "supported",
+      "file_path": "create_pretraining_data.py",
+      "line_start": 342,
+      "line_end": 373,
+      "code_snippet": "def create_masked_lm_predictions(tokens, masked_lm_prob,\n                                 max_predictions_per_seq, vocab_words, rng):\n  \"\"\"Creates the predictions for the masked LM objective.\"\"\"\n\n  cand_indexes = []\n  for (i, token) in enumerate(tokens):\n    if token == \"[CLS]\" or token == \"[SEP]\":\n      continue\n    # Whole Word Masking means that if we mask all of the wordpieces\n    # corresponding to an original word. When a word has been split into\n    # WordPieces, the first token does not have any marker and any subsequence\n    # tokens are prefixed with ##. So whenever we see the ## token, we\n    # append it to the previous set of word indexes.\n    #\n    # Note that Whole Word Masking does *not* change the training code\n    # at all -- we still predict each WordPiece independently, softmaxed\n    # over the entire vocabulary.\n    if (FLAGS.do_whole_word_mask and len(cand_indexes) >= 1 and\n        token.startswith(\"##\")):\n      cand_indexes[-1].append(i)\n    else:\n      cand_indexes.append([i])\n\n  rng.shuffle(cand_indexes)\n\n  output_tokens = list(tokens)\n\n  num_to_predict = min(max_predictions_per_seq,\n                       max(1, int(round(len(tokens) * masked_lm_prob))))\n\n  masked_lms = []\n  covered_indexes = set()",
+      "explanation": "The probability of masking is set by the `masked_lm_prob` flag, which defaults to 0.15 (15%). The function `create_masked_lm_predictions` calculates the target number of predictions (`num_to_predict`) by rounding the sequence length multiplied by `masked_lm_prob`, which directly implements the 15% masking rate.",
+      "limitations": "The code shows the mechanism for selecting candidates and setting the probability, but it does not prove that the masking is applied 'at random' in the sense of the final selection process."
+    },
+    {
+      "claim": {
+        "id": "claim_0_1",
+        "text": "The training data generator chooses 15% of the token positions at random for prediction.",
+        "page": null
+      },
+      "status": "ambiguous",
+      "file_path": null,
+      "line_start": null,
+      "line_end": null,
+      "code_snippet": null,
+      "explanation": "Snippets were found (6 from create_pretraining_data.py:L6-469, extract_features.py:L11-419, modeling.py:L49-288, modeling.py:L413-579, modeling.py:L582-632, modeling.py:L693-755) but Gemma analysis failed: Gemma returned invalid JSON: Invalid control character at: line 5 column 67 (char 165)",
+      "limitations": "Retry may succeed if the model was temporarily unavailable."
+    },
+    {
+      "claim": {
+        "id": "claim_0_2",
+        "text": "If the i-th token is chosen, we replace the i-th token with (1) the [MASK] token 80% of the time (2) a random token 10% of the time (3) the unchanged i-th token 10% of the time.",
+        "page": null
+      },
+      "status": "supported",
+      "file_path": "create_pretraining_data.py",
+      "line_start": 391,
+      "line_end": 401,
+      "code_snippet": "      masked_token = None\n      # 80% of the time, replace with [MASK]\n      if rng.random() < 0.8:\n        masked_token = \"[MASK]\"\n      else:\n        # 10% of the time, keep original\n        if rng.random() < 0.5:\n          masked_token = tokens[index]\n        # 10% of the time, replace with random word\n        else:\n          masked_token = vocab_words[rng.randint(0, len(vocab_words) - 1)]",
+      "explanation": "The function `create_masked_lm_predictions` implements the specified masking strategy. The code checks if `rng.random() < 0.8` (80% chance) to replace the token with \"[MASK]\". The remaining 20% is split: 50% of that (10% overall) keeps the original token, and the final 50% (10% overall) replaces it with a random word from the vocabulary.",
+      "limitations": "The code only shows the masking logic and does not demonstrate the full pretraining pipeline."
+    },
+    {
+      "claim": {
+        "id": "claim_0_3",
+        "text": "We do not always replace 'masked' words with the actual [MASK] token.",
+        "page": null
+      },
+      "status": "supported",
+      "file_path": "create_pretraining_data.py",
+      "line_start": 392,
+      "line_end": 403,
+      "code_snippet": "      # 80% of the time, replace with [MASK]\n      if rng.random() < 0.8:\n        masked_token = \"[MASK]\"\n      else:\n        # 10% of the time, keep original\n        if rng.random() < 0.5:\n          masked_token = tokens[index]\n        # 10% of the time, replace with random word\n        else:\n          masked_token = vocab_words[rng.randint(0, len(vocab_words) - 1)]\n\n      output_tokens[index] = masked_token",
+      "explanation": "The `create_masked_lm_predictions` function implements the masking strategy. It uses a random number generator to decide the replacement. Specifically, there is a 10% chance (when the initial 80% check fails and the subsequent 50% check succeeds) that the original token (`tokens[index]`) is kept, which directly supports the claim.",
+      "limitations": "This code snippet only shows the logic for selecting the replacement token, not the full context of how the tokens are processed or used in training."
+    },
+    {
+      "claim": {
+        "id": "claim_0_4",
+        "text": "When choosing sentences A and B for each pre-training example, 50% of the time B is the actual next sentence that follows A (labeled as IsNext), and 50% of the time it is a random sentence from the corpus (labeled as NotNext).",
+        "page": null
+      },
+      "status": "supported",
+      "file_path": "create_pretraining_data.py",
+      "line_start": 269,
+      "line_end": 298,
+      "code_snippet": "        # Random next\n        is_random_next = False\n        if len(current_chunk) == 1 or rng.random() < 0.5:\n          is_random_next = True\n          target_b_length = target_seq_length - len(tokens_a)\n\n          # This should rarely go for more than one iteration for large\n          # corpora. However, just to be careful, we try to make sure that\n          # the random document is not the same as the document\n          # we're processing.\n          for _ in range(10):\n            random_document_index = rng.randint(0, len(all_documents) - 1)\n            if random_document_index != document_index:\n              break\n\n          random_document = all_documents[random_document_index]\n          random_start = rng.randint(0, len(random_document) - 1)\n          for j in range(random_start, len(random_document)):\n            tokens_b.extend(random_document[j])\n            if len(tokens_b) >= target_b_length:\n              break\n          # We didn't actually use these segments so we \"put them back\" so\n          # they don't go to waste.\n          num_unused_segments = len(current_chunk) - a_end\n          i -= num_unused_segments\n        # Actual next\n        else:\n          is_random_next = False\n          for j in range(a_end, len(current_chunk)):\n            tokens_b.extend(current_chunk[j])",
+      "explanation": "The `create_instances_from_document` function implements the selection logic for sentence B. The condition `rng.random() < 0.5` determines whether the next sentence is random (`is_random_next = True`) or the actual next sentence (`is_random_next = False`), achieving the claimed 50/50 split for most examples.",
+      "limitations": "The code also handles the edge case where `len(current_chunk) == 1`, forcing a random selection, which slightly deviates from a strict 50/50 split across all possible inputs."
+    }
+  ],
+  "summary": {
+    "total_claims": 30,
+    "supported": 9,
+    "ambiguous": 8,
+    "missing": 13
+  }
+}
