@@ -87,6 +87,16 @@ def _log(job: dict[str, Any], msg: str) -> None:
 
 # ── Routes ─────────────────────────────────────────────────────────────────
 
+@app.get("/")
+async def root():
+    return {
+        "status": "ok",
+        "service": "PaperTrail Backend API",
+        "docs": "/docs",
+        "health": "/api/health/ollama",
+    }
+
+
 @app.get("/api/health/ollama")
 async def health_ollama():
     gemma = get_gemma_service()
