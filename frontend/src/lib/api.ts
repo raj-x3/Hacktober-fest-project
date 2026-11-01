@@ -1,6 +1,8 @@
 import type { AnalysisReport, OllamaStatus } from './types'
 
-const BASE = '/api'
+const BASE = (import.meta.env.VITE_API_BASE_URL
+  ? import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')
+  : '') + '/api'
 
 async function post<T>(path: string, body: FormData | Record<string, unknown>): Promise<T> {
   const init: RequestInit =
