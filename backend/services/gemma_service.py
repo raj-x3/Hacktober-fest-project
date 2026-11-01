@@ -6,13 +6,14 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 from typing import Any, Optional
 
 import httpx
 
-OLLAMA_BASE = "http://localhost:11434"
-DEFAULT_MODEL = "gemma4:e4b"
+OLLAMA_BASE = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gemma4:e4b")
 ALT_MODEL = "gemma4:e2b"
 
 logger = logging.getLogger(__name__)
